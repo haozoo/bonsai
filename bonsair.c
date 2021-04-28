@@ -62,30 +62,31 @@ int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
     if (out[prev - ydir * SCR_WIDTH + xdir] != ' ') {
       xdir *= -1;
     }
-
-    if (ydir) {
-      switch (xdir) {
-      case -1:
-        out[prev] = '\\';
-        break;
-      case 0:
-        out[prev] = '|';
-        break;
-      case 1:
-        out[prev] = '/';
-        break;
-      }
-    } else {
-      switch (xdir) {
-      case -1:
-        out[prev] = '_';
-        break;
-      case 0:
-        out[prev] = '_';
-        break;
-      case 1:
-        out[prev] = '_';
-        break;
+    if (out[prev] != '#') {
+      if (ydir) {
+        switch (xdir) {
+        case -1:
+          out[prev] = '\\';
+          break;
+        case 0:
+          out[prev] = '|';
+          break;
+        case 1:
+          out[prev] = '/';
+          break;
+        }
+      } else {
+        switch (xdir) {
+        case -1:
+          out[prev] = '_';
+          break;
+        case 0:
+          out[prev] = '_';
+          break;
+        case 1:
+          out[prev] = '_';
+          break;
+        }
       }
     }
     printscr(out);
