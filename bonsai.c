@@ -9,7 +9,7 @@
 #define SCR_WIDTH 100
 #define SCR_HEIGHT 50
 #define SCR_SIZE (SCR_WIDTH * SCR_HEIGHT)
-#define MAX_ITERS 500
+#define MAX_ITERS 50
 
 int main() {
   /* Generate seed using time */
@@ -33,6 +33,8 @@ int main() {
   char output[SCR_SIZE];
   for (int i = 0; i < SCR_SIZE; i++)
     output[i] = ' ';
+  for (int i = 0; i < SCR_WIDTH; i++)
+    output[SCR_WIDTH * (SCR_HEIGHT / 2) + i] = '=';
 
   /* Clear screen */
   printf("[2J");
@@ -62,6 +64,7 @@ int main() {
     /* 4. Add new pos to array */
     int L = 1, M = 1, R = 1;
     int LL = 1, RR = 1;
+    int AL = 1, AR = 1;
     for (int j = 0; j < posLen; j++) {
 
       if (pos[j] == tmp - SCR_WIDTH)
@@ -76,27 +79,59 @@ int main() {
         LL = 0;
       if (pos[j] == tmp - SCR_WIDTH + 2)
         RR = 0;
+
+      if (pos[j] == tmp - 1)
+        AL = 0;
+      if (pos[j] == tmp + 1)
+        AR = 0;
     }
 
+    int I_M = 1;
+    int I_LR = 1;
+    int I_LLRR = 1;
+    int I_ALAR = 2;
+
     if (M) {
-      pos[posLen++] = tmp;
-      sym[symLen++] = '|';
+      for (int i = 0; i < I_M; i++) {
+        pos[posLen++] = tmp;
+        sym[symLen++] = '|';
+      }
     }
     if (L) {
-      pos[posLen++] = tmp - SCR_WIDTH - 1;
-      sym[symLen++] = '_';
+      for (int i = 0; i < I_LR; i++) {
+        pos[posLen++] = tmp - SCR_WIDTH - 1;
+        sym[symLen++] = '\\';
+      }
     }
     if (R) {
-      pos[posLen++] = tmp - SCR_WIDTH + 1;
-      sym[symLen++] = '_';
+      for (int i = 0; i < I_LR; i++) {
+        pos[posLen++] = tmp - SCR_WIDTH + 1;
+        sym[symLen++] = '/';
+      }
     }
     if (LL) {
-      pos[posLen++] = tmp - SCR_WIDTH - 2;
-      sym[symLen++] = '\\';
+      for (int i = 0; i < I_LLRR; i++) {
+        pos[posLen++] = tmp - SCR_WIDTH - 2;
+        sym[symLen++] = '\\';
+      }
     }
     if (RR) {
-      pos[posLen++] = tmp - SCR_WIDTH + 2;
-      sym[symLen++] = '/';
+      for (int i = 0; i < I_LLRR; i++) {
+        pos[posLen++] = tmp - SCR_WIDTH + 2;
+        sym[symLen++] = '/';
+      }
+    }
+    if (AL) {
+      for (int i = 0; i < I_ALAR; i++) {
+        pos[posLen++] = tmp - 1;
+        sym[symLen++] = '=';
+      }
+    }
+    if (AR) {
+      for (int i = 0; i < I_ALAR; i++) {
+        pos[posLen++] = tmp + 1;
+        sym[symLen++] = '=';
+      }
     }
 
     int max = 0;
@@ -105,7 +140,7 @@ int main() {
         max = pos[j];
     }
     for (int j = 0; j < posLen; j++) {
-      if (pos[j] / SCR_WIDTH < max / SCR_WIDTH) {
+      if (pos[j] / SCR_WIDTH > max / SCR_WIDTH + 1) {
         pos[j] = pos[posLen - 1];
         sym[j] = sym[symLen - 1];
         pos[posLen - 1] = 0;
