@@ -10,7 +10,8 @@
 #define SCR_HEIGHT 50
 #define SCR_SIZE (SCR_WIDTH * SCR_HEIGHT)
 
-int bonsaimaker(char *, int, int, int, int, float);
+int bonsaimaker(char *, int, int, int, int, int);
+int foliate(char *out, int xdir, int ydir, int prev);
 
 int main() {
   srand(time(0));
@@ -44,10 +45,9 @@ int main() {
 }
 
 int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
-                float growth) {
+                int growth) {
   if (growth == 0) {
-    out[prev] = (branch) ? '@' : '#';
-    return 0;
+    return foliate(out, xdir, ydir, prev);
   } else {
 
     // vary trunk
@@ -102,4 +102,12 @@ int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
     return bonsaimaker(out, xdir, ydir, prev - ydir * SCR_WIDTH + xdir, branch,
                        growth - 1);
   }
+}
+
+int foliate(char *out, int xdir, int ydir, int prev) {
+  prev -= xdir;
+  for (int i = 0; i < 5; i++) {
+    out[prev + xdir * i] = '#';
+  }
+  return 0;
 }
