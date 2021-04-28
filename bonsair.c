@@ -10,6 +10,8 @@
 #define SCR_HEIGHT 50
 #define SCR_SIZE (SCR_WIDTH * SCR_HEIGHT)
 
+#define MAX_GROWTH 30
+
 int bonsaimaker(char *, int, int, int, int, int);
 int foliate(char *, int, int, int);
 void printscr(char *);
@@ -25,7 +27,7 @@ int main() {
   /* Clear screen */
   printf("[2J");
   bonsaimaker(output, 0, 1, SCR_WIDTH / 2 + SCR_WIDTH * (SCR_HEIGHT / 2), 0,
-              30);
+              MAX_GROWTH);
 
   /* Clear screen & print */
   printscr(output);
@@ -55,13 +57,18 @@ int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
 
     // vary branch
     if (branch) {
+      if (!xdir)
+        xdir = -1;
       ydir = (rand() % (2));
     }
 
     // precheck spot
     if (out[prev - ydir * SCR_WIDTH + xdir] != ' ') {
+
       xdir *= -1;
+      ydir = 0;
     }
+
     if (out[prev] != '#') {
       if (ydir) {
         switch (xdir) {
@@ -130,10 +137,10 @@ void printscr(char *out) {
   printf("[H");
   for (int k = 0; k < SCR_SIZE; k++) {
     if (k % SCR_WIDTH) {
-      putchar(out[k]);
+      printf("%c", out[k]);
     } else {
-      putchar(10);
+      printf("\n");
     }
   }
-  putchar(10);
+  printf("\n");
 }
