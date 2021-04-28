@@ -13,7 +13,7 @@
 int bonsaimaker(char *, char, int, float);
 
 int main() {
-  // srand(time(0));
+  srand(time(0));
 
   /* Output */
   char output[SCR_SIZE];
@@ -23,7 +23,8 @@ int main() {
   /* Clear screen */
   printf("[2J");
 
-  bonsaimaker(output, 2, SCR_WIDTH / 2 + SCR_WIDTH * (SCR_HEIGHT / 2), 10);
+  bonsaimaker(output, 1, SCR_WIDTH / 2 + SCR_WIDTH * (SCR_HEIGHT / 2), 20);
+
   // for (k = 0; k < SCR_SIZE; k++)
   //   printf("%c", output[k]);
 
@@ -43,9 +44,41 @@ int main() {
 
 int bonsaimaker(char *out, char dir, int prev, float growth) {
   if (growth == 0) {
+    out[prev] = '@';
     return 0;
   } else {
-    out[prev] = '|';
-    return bonsaimaker(out, dir, prev - SCR_WIDTH, growth - 1);
+
+    int dir = (rand() % (5));
+    int r = (rand() % (10));
+
+    // new branch
+    if (!r) {
+      int ndir = (rand() % (5));
+      bonsaimaker(out, ndir, prev, growth - 1);
+    }
+
+    switch (dir) {
+    case 0:
+      out[prev] = '_';
+      return bonsaimaker(out, dir, prev - 1, growth - 1);
+      break;
+    case 1:
+      out[prev] = '\\';
+      return bonsaimaker(out, dir, prev - SCR_WIDTH - 1, growth - 1);
+      break;
+    case 2:
+      out[prev] = '|';
+      return bonsaimaker(out, dir, prev - SCR_WIDTH, growth - 1);
+      break;
+    case 3:
+      out[prev] = '/';
+      return bonsaimaker(out, dir, prev - SCR_WIDTH + 1, growth - 1);
+      break;
+    case 4:
+      out[prev] = '_';
+      return bonsaimaker(out, dir, prev + 1, growth - 1);
+      break;
+    }
   }
+  return 0;
 }
