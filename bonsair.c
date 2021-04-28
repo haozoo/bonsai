@@ -11,7 +11,8 @@
 #define SCR_SIZE (SCR_WIDTH * SCR_HEIGHT)
 
 int bonsaimaker(char *, int, int, int, int, int);
-int foliate(char *out, int xdir, int ydir, int prev);
+int foliate(char *, int, int, int);
+void printscr(char *);
 
 int main() {
   srand(time(0));
@@ -23,29 +24,17 @@ int main() {
 
   /* Clear screen */
   printf("[2J");
-
   bonsaimaker(output, 0, 1, SCR_WIDTH / 2 + SCR_WIDTH * (SCR_HEIGHT / 2), 0,
-              20);
-
-  // for (k = 0; k < SCR_SIZE; k++)
-  //   printf("%c", output[k]);
+              30);
 
   /* Clear screen & print */
-  printf("[H");
-  for (int k = 0; k < SCR_SIZE; k++) {
-    if (k % SCR_WIDTH) {
-      putchar(output[k]);
-    } else {
-      putchar(10);
-    }
-  }
-  putchar(10);
-
+  printscr(output);
   return 0;
 }
 
 int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
                 int growth) {
+
   if (growth == 0) {
     return foliate(out, xdir, ydir, prev);
   } else {
@@ -56,7 +45,7 @@ int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
       ydir = (rand() % (2));
     }
 
-    int r = (rand() % (10));
+    int r = (rand() % (15));
     // new branch
     if (!r) {
       xdir *= -1;
@@ -99,15 +88,51 @@ int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
         break;
       }
     }
+    printscr(out);
+    usleep(30000);
     return bonsaimaker(out, xdir, ydir, prev - ydir * SCR_WIDTH + xdir, branch,
                        growth - 1);
   }
 }
 
 int foliate(char *out, int xdir, int ydir, int prev) {
-  prev -= xdir;
-  for (int i = 0; i < 5; i++) {
-    out[prev + xdir * i] = '#';
+  prev -= 2 * xdir;
+  if (xdir) {
+    int k = 15;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < k; j++) {
+        out[prev - i * SCR_WIDTH + xdir * j] = '#';
+        printscr(out);
+        usleep(30000);
+      }
+      k -= 4;
+      prev += xdir;
+    }
+  } else {
+    int k = 15;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < k / 2; j++) {
+        out[prev - i * SCR_WIDTH - j] = '#';
+        out[prev - i * SCR_WIDTH + j] = '#';
+        printscr(out);
+        usleep(30000);
+      }
+      k -= 7;
+      k--;
+      prev += xdir;
+    }
   }
   return 0;
+}
+
+void printscr(char *out) {
+  printf("[H");
+  for (int k = 0; k < SCR_SIZE; k++) {
+    if (k % SCR_WIDTH) {
+      putchar(out[k]);
+    } else {
+      putchar(10);
+    }
+  }
+  putchar(10);
 }
