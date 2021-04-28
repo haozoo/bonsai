@@ -10,7 +10,7 @@
 #define SCR_HEIGHT 50
 #define SCR_SIZE (SCR_WIDTH * SCR_HEIGHT)
 
-int bonsaimaker(char *, char, int, float);
+int bonsaimaker(char *, int, int, int, int, float);
 
 int main() {
   srand(time(0));
@@ -23,7 +23,8 @@ int main() {
   /* Clear screen */
   printf("[2J");
 
-  bonsaimaker(output, 1, SCR_WIDTH / 2 + SCR_WIDTH * (SCR_HEIGHT / 2), 20);
+  bonsaimaker(output, 0, 1, SCR_WIDTH / 2 + SCR_WIDTH * (SCR_HEIGHT / 2), 0,
+              20);
 
   // for (k = 0; k < SCR_SIZE; k++)
   //   printf("%c", output[k]);
@@ -42,43 +43,63 @@ int main() {
   return 0;
 }
 
-int bonsaimaker(char *out, char dir, int prev, float growth) {
+int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
+                float growth) {
   if (growth == 0) {
-    out[prev] = '@';
+    out[prev] = (branch) ? '@' : '#';
     return 0;
   } else {
 
-    int dir = (rand() % (5));
-    int r = (rand() % (10));
+    // vary trunk
+    if (!branch) {
+      xdir = (rand() % (3)) - 1;
+      ydir = (rand() % (2));
+    }
 
+    int r = (rand() % (10));
     // new branch
     if (!r) {
-      int ndir = (rand() % (5));
-      bonsaimaker(out, ndir, prev, growth - 1);
+      xdir *= -1;
+      ydir = 1;
+      bonsaimaker(out, xdir, ydir, prev, 1, growth - 1);
     }
 
-    switch (dir) {
-    case 0:
-      out[prev] = '_';
-      return bonsaimaker(out, dir, prev - 1, growth - 1);
-      break;
-    case 1:
-      out[prev] = '\\';
-      return bonsaimaker(out, dir, prev - SCR_WIDTH - 1, growth - 1);
-      break;
-    case 2:
-      out[prev] = '|';
-      return bonsaimaker(out, dir, prev - SCR_WIDTH, growth - 1);
-      break;
-    case 3:
-      out[prev] = '/';
-      return bonsaimaker(out, dir, prev - SCR_WIDTH + 1, growth - 1);
-      break;
-    case 4:
-      out[prev] = '_';
-      return bonsaimaker(out, dir, prev + 1, growth - 1);
-      break;
+    // vary branch
+    if (branch) {
+      ydir = (rand() % (2));
     }
+
+    // precheck spot
+    if (out[prev - ydir * SCR_WIDTH + xdir] != ' ') {
+      xdir *= -1;
+    }
+
+    if (ydir) {
+      switch (xdir) {
+      case -1:
+        out[prev] = '\\';
+        break;
+      case 0:
+        out[prev] = '|';
+        break;
+      case 1:
+        out[prev] = '/';
+        break;
+      }
+    } else {
+      switch (xdir) {
+      case -1:
+        out[prev] = '_';
+        break;
+      case 0:
+        out[prev] = '_';
+        break;
+      case 1:
+        out[prev] = '_';
+        break;
+      }
+    }
+    return bonsaimaker(out, xdir, ydir, prev - ydir * SCR_WIDTH + xdir, branch,
+                       growth - 1);
   }
-  return 0;
 }
