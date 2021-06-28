@@ -89,6 +89,7 @@ int bonsaimaker(char *out, int xdir, int ydir, int prev, int branch,
           break;
         case 0:
           out[prev] = '_';
+
           break;
         case 1:
           out[prev] = '_';
