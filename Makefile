@@ -4,8 +4,10 @@
 
 # Compiler settings - Can be customized.
 CC = g++
-CXXFLAGS = -std=c++11 -Wall -g
-LDFLAGS = -lSDL2 -lGL -lGLEW -lglut
+CXXFLAGS = -std=c++11 -Wall
+LDFLAGS = include/glad.c -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl 
+
+
 
 # Makefile settings - Can be customized.
 APPNAME = bonsai
