@@ -5,17 +5,23 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "camera/camera.h"
 #include "shaders/shader.h"
 #include "stb_image.h"
 
+using namespace std;
+
 /* Callbacks */
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+
+/* Bonsai */
+void bonsai(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth);
 
 /* Screen Settings */
 const unsigned int SCR_WIDTH = 800;
@@ -52,7 +58,8 @@ int main() {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // mouse capture
+  glfwSetInputMode(window, GLFW_CURSOR,
+                   GLFW_CURSOR_DISABLED); // mouse capture
 
   /* 4. Use glad to load / manage function pointers */
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -95,9 +102,23 @@ int main() {
       0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
       -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
 
-  glm::vec3 cubePositions[] = {// World space position of each cube
-                               glm::vec3(0.0f, 0.0f, 0.0f),
-                               glm::vec3(1.0f, 1.0f, 1.0f)};
+  /*
+      ________
+     /⠡      /\
+    /  ⠡..../..\
+   /___⠌___/   /
+   \  ⠌    \  /
+    \⠌______\/
+
+   */
+
+  glm::vec3 origin = glm::vec3(0, 0, 0);
+  vector<glm::vec3> cubePositions; // World space position of each cube
+  bonsai(origin, cubePositions, 10);
+  for (unsigned int i = 0; i < cubePositions.size(); i++) {
+    std::cout << cubePositions[i].x << cubePositions[i].y << cubePositions[i].z
+              << endl;
+  }
 
   unsigned int VBO, VAO;
   glGenVertexArrays(1, &VAO);
@@ -131,7 +152,8 @@ int main() {
   stbi_set_flip_vertically_on_load(
       true); // tell stb_image.h to flip loaded texture's on the y-axis.
   unsigned char *data =
-      stbi_load("../img/black.jpg", &width, &height, &nrChannels, 0);
+      stbi_load("/home/hao/Documents/github/fun/bonsai/img/black.jpg", &width,
+                &height, &nrChannels, 0);
   if (data) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, data);
@@ -177,9 +199,9 @@ int main() {
 
     /* render all boxes */
     glBindVertexArray(VAO);
-    for (unsigned int i = 0; i < 2; i++) {
-      // calculate the model matrix for each object and pass it to shader before
-      // drawing
+    for (unsigned int i = 0; i < cubePositions.size(); i++) {
+      // calculate the model matrix for each object and pass it to shader
+      // before drawing
       glm::mat4 model = glm::mat4(
           1.0f); // make sure to initialize matrix to identity matrix first
       model = glm::translate(model, cubePositions[i]);
@@ -237,4 +259,14 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 /* Callback: handles mouse scroll wheel */
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
+}
+
+/* Bonsai function */
+void bonsai(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth) {
+  if (growth == 0)
+    return;
+  pos = glm::vec3(pos.x, pos.y + 1.0f, pos.z + 1.0f);
+  cubePositions.push_back(pos);
+  bonsai(pos, cubePositions, growth - 1);
+  std::cout << "kappa" << std::endl;
 }
