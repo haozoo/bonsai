@@ -4,12 +4,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
+#include "bonsai/bgen.h"
 #include "camera/camera.h"
 #include "shaders/shader.h"
 #include "stb_image.h"
@@ -21,13 +23,6 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-
-/* Bonsai */
-void bonsai(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth);
-void bonsai1(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth,
-             int xdir, int zdir);
-int check_collision(vector<glm::vec3> cubePositions, glm::vec3 pos);
-int check_touching(vector<glm::vec3> cube_positions, glm::vec3 pos);
 
 /* Screen Settings */
 const unsigned int SCR_WIDTH = 800;
@@ -121,7 +116,7 @@ int main() {
   srand(time(NULL));
   glm::vec3 origin = glm::vec3(0, 0, 0);
   vector<glm::vec3> cubePositions; // World space position of each cube
-  bonsai1(origin, cubePositions, 50, 1, 1);
+  bonsai(origin, cubePositions, 50, 1, 1);
   for (unsigned int i = 0; i < cubePositions.size(); i++) {
     std::cout << cubePositions[i].x << cubePositions[i].y << cubePositions[i].z
               << endl;
@@ -174,6 +169,7 @@ int main() {
   ourShader.use();
   ourShader.setInt("texture", 0);
 
+  unsigned int ind = 0;
   /* 10. Render loop */
   while (!glfwWindowShouldClose(window)) {
     /* per-frame time logic */
@@ -206,7 +202,7 @@ int main() {
 
     /* render all boxes */
     glBindVertexArray(VAO);
-    for (unsigned int i = 0; i < cubePositions.size(); i++) {
+    for (unsigned int i = 0; i < ind && i < cubePositions.size(); i++) {
       // calculate the model matrix for each object and pass it to shader
       // before drawing
       glm::mat4 model = glm::mat4(
@@ -216,6 +212,7 @@ int main() {
 
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
+    ind++;
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
@@ -266,95 +263,4 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 /* Callback: handles mouse scroll wheel */
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
-}
-
-/* Bonsai function */
-void bonsai(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth) {
-  /* Base case */
-  if (growth == 0)
-    return;
-
-  /* Growth in a singular direction */
-  glm::vec3 npos = pos;
-
-  do {
-    int dir = rand() % 3, xzdist = rand() % 3 - 1, ydist = rand() % 2;
-    switch (dir) {
-    case 0: // x-axis
-      npos = pos + glm::vec3(xzdist, 0, 0);
-      break;
-    case 1: // y-axis
-      npos = pos + glm::vec3(0, ydist, 0);
-      break;
-    case 2: // z-axis
-      npos = pos + glm::vec3(0, 0, xzdist);
-      break;
-    }
-  } while (check_collision(cubePositions, npos));
-
-  // npos = glm::vec3(sin(pos.y + 1), pos.y + 1, 0.0f);
-
-  cubePositions.push_back(npos);
-
-  /* Branch */
-  if (rand() % 10 == 3)
-    bonsai(npos, cubePositions, (int)(growth / 3));
-
-  /* Recursive Case */
-  bonsai(npos, cubePositions, growth - 1);
-}
-
-/* Bonsai function */
-void bonsai1(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth,
-             int xdir, int zdir) {
-  /* Base case */
-  if (growth == 0)
-    return;
-
-  /* Growth in a singular direction */
-  glm::vec3 npos = pos;
-
-  int i = 3;
-  while (i > 0) {
-    if (rand() % 2 == 0) {
-      npos += glm::vec3(xdir * (rand() % 2), 0, 0);
-    } else {
-      npos += glm::vec3(0, 0, zdir * (rand() % 2));
-    }
-    if (check_touching(cubePositions, npos) > 2)
-      return;
-    cubePositions.push_back(npos);
-    i--;
-  }
-
-  /* Attach cubes */
-  npos += glm::vec3(0, 1, 0);
-  cubePositions.push_back(npos);
-
-  /* Branch */
-  if (growth % 3 == 0 && rand() % 5 == 0) {
-    int nxdir = xdir * -1 * (rand() % 2), nzdir = zdir * -1 * (rand() % 2);
-    if (nxdir || nzdir)
-      bonsai1(npos, cubePositions, (int)(growth), nxdir, nzdir);
-  }
-  /* Recursive Case */
-  bonsai1(npos, cubePositions, growth - 1, xdir, zdir);
-}
-
-/* Function: checks if cube already exists */
-int check_collision(vector<glm::vec3> cubePositions, glm::vec3 pos) {
-  for (unsigned int i = 0; i < cubePositions.size(); i++) {
-    if (cubePositions[i] == pos)
-      return 1; // collision
-  }
-  return 0; // no collision
-}
-
-/* Function: checks if cube touchs any adjacent blocks */
-int check_touching(vector<glm::vec3> cube_positions, glm::vec3 pos) {
-  return (check_collision(cube_positions, pos + glm::vec3(1, 0, 0)) +
-          check_collision(cube_positions, pos + glm::vec3(-1, 0, 0)) +
-          check_collision(cube_positions, pos + glm::vec3(0, 1, 0)) +
-          check_collision(cube_positions, pos + glm::vec3(0, 0, 1)) +
-          check_collision(cube_positions, pos + glm::vec3(0, 0, -1)));
 }
