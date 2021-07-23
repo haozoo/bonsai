@@ -8,7 +8,7 @@
 #include <vector>
 
 const unsigned int MAX_XZ_GROWTH = 4;
-const unsigned int BRANCH_COOLDOWN = 3;
+const unsigned int BRANCH_COOLDOWN = 2;
 
 // function declarations -------------------------------------------------------
 void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &cubePositions,
@@ -41,7 +41,7 @@ void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &cubePositions,
     cubePositions.push_back(npos);
 
     // (random) potentially makes a branch growth iterations
-    if (growth % BRANCH_COOLDOWN == 0 && rand() % 5 == 0) {
+    if (growth % BRANCH_COOLDOWN == 0 && rand() % 4 == 0) {
       int nxdir = xdir * -1 * (rand() % 2), nzdir = zdir * -1 * (rand() % 2);
       if (nxdir || nzdir)
         generateBonsai(npos, cubePositions, growth - 1, nxdir, nzdir);

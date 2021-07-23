@@ -28,8 +28,11 @@ void processInput(GLFWwindow *window);
 
 // constants -------------------------------------------------------------------
 // screen settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1000;
+const unsigned int SCR_HEIGHT = 750;
+
+// bonsai max growth
+const unsigned int BONSAI_GROWTH = 30;
 
 // camera settings
 Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
@@ -40,6 +43,9 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+// lighting
+glm::vec3 lightPos(0.0f, 30.0f, 0.0f);
 
 // main ------------------------------------------------------------------------
 int main() {
@@ -57,9 +63,12 @@ int main() {
   glEnable(GL_DEPTH_TEST);
 
   // build and compile shader programs from the following
-  Shader ourShader(
-      "/home/hao/Documents/github/fun/bonsai/src/shaders/vshader.txt",
-      "/home/hao/Documents/github/fun/bonsai/src/shaders/fshader.txt");
+  Shader lightingShader(
+      "/home/hao/Documents/github/fun/bonsai/src/shaders/shadervs",
+      "/home/hao/Documents/github/fun/bonsai/src/shaders/shaderfs");
+  Shader lightCubeShader(
+      "/home/hao/Documents/github/fun/bonsai/src/shaders/sourcevs",
+      "/home/hao/Documents/github/fun/bonsai/src/shaders/sourcefs");
 
   // define cube vertices
   /*
@@ -116,113 +125,135 @@ int main() {
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f  //
   };
   srand(time(NULL));
-  vector<glm::vec3> cubePositions; // World space position of each cube
-  generateBonsai(glm::vec3(0, 0, 0), cubePositions, 50, 1, 1);
+  vector<glm::vec3> cubePositions;
+  generateBonsai(glm::vec3(0, 0, 0), cubePositions, BONSAI_GROWTH, 1, 1);
 
-  // configure VAO and buffers
-  unsigned int VBO, VAO;
-  glGenVertexArrays(1, &VAO);
+  // configure cube VBO and VBA
+  unsigned int VBO, cubeVAO;
+  glGenVertexArrays(1, &cubeVAO);
   glGenBuffers(1, &VBO);
 
-  glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  // Configure position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+  glBindVertexArray(cubeVAO);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-  // Configure texture attribute
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                         (void *)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        (void *)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
 
-  /* 8. Texture handling */
-  unsigned int texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  // set the texture wrapping parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  // set texture filtering parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  // load image, create texture and generate mipmaps
-  int width, height, nrChannels;
-  stbi_set_flip_vertically_on_load(
-      true); // tell stb_image.h to flip loaded texture's on the y-axis.
-  unsigned char *data =
-      stbi_load("/home/hao/Documents/github/fun/bonsai/img/block.png", &width,
-                &height, &nrChannels, 0);
-  if (data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-  } else {
-    std::cout << "Failed to load texture" << std::endl;
-  }
-  stbi_image_free(data);
+  // configure light cube's VAO (VBO same)
+  unsigned int lightCubeVAO;
+  glGenVertexArrays(1, &lightCubeVAO);
+  glBindVertexArray(lightCubeVAO);
 
-  /* 9. Assign texture units to samplers */
-  ourShader.use();
-  ourShader.setInt("texture", 0);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  // note that we update the lamp's position attribute's stride to reflect the
+  // updated buffer data
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
 
-  unsigned int ind = 0;
-  /* 10. Render loop */
+  // load in textures (diffuse map + specular map for lighting)
+  unsigned int diffuseMap =
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/block.png");
+  unsigned int specularMap =
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/block.png");
+
+  // assign texture units to samplers
+  lightingShader.use();
+  lightingShader.setInt("material.diffuse", 0);
+  lightingShader.setInt("material.specular", 1);
+
+  // render loop ---------------------------------------------------------------
+  unsigned int tick = 0;
   while (!glfwWindowShouldClose(window)) {
-    /* per-frame time logic */
+
+    // frame logic
     float currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
+    // process user input
     processInput(window);
 
-    /* render */
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    // render background
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // cyan
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    /* textures */
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    // activate shader for setting uniforms/drawing objects
+    lightingShader.use();
+    lightingShader.setVec3("light.position", lightPos);
+    lightingShader.setVec3("viewPos", camera.Position);
 
-    /* activate shader */
-    ourShader.use();
+    // light properties
+    lightingShader.setVec3("light.ambient", 0.7f, 0.7f, 0.7f);
+    lightingShader.setVec3("light.diffuse", 1.3f, 1.3f, 1.3f);
+    lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
-    /* pass projection frame to shader */
+    // material properties
+    lightingShader.setFloat("material.shininess", 64.0f);
+
+    // view/projection transformations
     glm::mat4 projection =
         glm::perspective(glm::radians(camera.Zoom),
                          (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    ourShader.setMat4("projection", projection);
-
-    /* camera view transform */
     glm::mat4 view = camera.GetViewMatrix();
-    ourShader.setMat4("view", view);
+    lightingShader.setMat4("projection", projection);
+    lightingShader.setMat4("view", view);
 
-    /* render all boxes */
-    glBindVertexArray(VAO);
-    for (unsigned int i = 0; i < ind && i < cubePositions.size(); i++) {
-      // calculate the model matrix for each object and pass it to shader
-      // before drawing
-      glm::mat4 model = glm::mat4(
-          1.0f); // make sure to initialize matrix to identity matrix first
+    // world transformation
+    glm::mat4 model = glm::mat4(1.0f);
+    lightingShader.setMat4("model", model);
+
+    // bind diffuse map & specular map
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, specularMap);
+
+    // bind and render bonsai tree cubes
+    glBindVertexArray(cubeVAO);
+    for (unsigned int i = 0; i < tick && i < cubePositions.size(); i++) {
+      // calc model matrix for each object and pass it to shader before drawing
+      glm::mat4 model = glm::mat4(1.0f);
       model = glm::translate(model, cubePositions[i]);
-      ourShader.setMat4("model", model);
+      lightingShader.setMat4("model", model);
 
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
-    ind++;
+
+    // draw light object
+    lightCubeShader.use();
+    lightCubeShader.setMat4("projection", projection);
+    lightCubeShader.setMat4("view", view);
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, lightPos);
+    model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+    lightCubeShader.setMat4("model", model);
+
+    glBindVertexArray(lightCubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    // swap buffers and check for inputs
     glfwSwapBuffers(window);
     glfwPollEvents();
+    tick++;
   }
 
-  /* Clean - up */
-  glDeleteVertexArrays(1, &VAO);
+  // clean-up unecessary things
+  glDeleteVertexArrays(1, &cubeVAO);
+  glDeleteVertexArrays(1, &lightCubeVAO);
   glDeleteBuffers(1, &VBO);
   glfwTerminate();
   return 0;
 }
 
-/* Function: handles user keyboard input */
+// functions -------------------------------------------------------------------
+// handles user input
 void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
@@ -236,6 +267,7 @@ void processInput(GLFWwindow *window) {
     camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
+// sets all callbacks
 void setCallbacks(GLFWwindow *window) {
   glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
   glfwSetCursorPosCallback(window, mouseCallback);
@@ -243,12 +275,12 @@ void setCallbacks(GLFWwindow *window) {
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 };
 
-/* Callback: ensures viewport resizes accordingly upon window resize */
+// callback: ensures viewport resizes accordingly upon window resize
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-/* Callback: handles mouse movement */
+// callback: handles mouse movement
 void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
   if (firstMouse) {
     lastX = xpos;
@@ -265,7 +297,7 @@ void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
   camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-/* Callback: handles mouse scroll wheel */
+// callback: handles mouse scroll wheel
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
 }
