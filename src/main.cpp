@@ -32,7 +32,7 @@ const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 750;
 
 // bonsai max growth
-const unsigned int BONSAI_GROWTH = 30;
+unsigned int BONSAI_GROWTH = 30;
 
 // camera settings
 Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
@@ -125,8 +125,21 @@ int main() {
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f  //
   };
   srand(time(NULL));
-  vector<glm::vec3> cubePositions;
-  generateBonsai(glm::vec3(0, 0, 0), cubePositions, BONSAI_GROWTH, 1, 1);
+  vector<glm::vec3> branchPositions, leafPositions, potPositions;
+  generateBonsai(glm::vec3(0, 0, 0), branchPositions, leafPositions,
+                 BONSAI_GROWTH, 1, 1);
+
+  glm::vec3 origin = glm::vec3(0, 0, 0);
+  for (int x = -1; x <= 1; x++) {
+    for (int y = 2; y > -2; y--) {
+      for (int z = -1; z <= 1; z++) {
+        potPositions.push_back(origin + glm::vec3(x, y, z));
+      }
+    }
+  }
+  for (unsigned int i = 0; i < potPositions.size(); i++) {
+    cout << potPositions[i].x << potPositions[i].y << potPositions[i].z << endl;
+  }
 
   // configure cube VBO and VBA
   unsigned int VBO, cubeVAO;
@@ -162,11 +175,17 @@ int main() {
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/block.png");
   unsigned int specularMap =
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/block.png");
+  unsigned int leaf =
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/leaf.png");
+  unsigned int pot =
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/black.jpg");
 
   // assign texture units to samplers
   lightingShader.use();
   lightingShader.setInt("material.diffuse", 0);
   lightingShader.setInt("material.specular", 1);
+  lightingShader.setInt("texture", 2);
+  lightingShader.setInt("texture", 3);
 
   // render loop ---------------------------------------------------------------
   unsigned int tick = 0;
@@ -215,12 +234,36 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, specularMap);
 
-    // bind and render bonsai tree cubes
+    // bind and render bonsai tree branch cubes
     glBindVertexArray(cubeVAO);
-    for (unsigned int i = 0; i < tick && i < cubePositions.size(); i++) {
+    for (unsigned int i = 0; i < tick && i < branchPositions.size(); i++) {
       // calc model matrix for each object and pass it to shader before drawing
       glm::mat4 model = glm::mat4(1.0f);
-      model = glm::translate(model, cubePositions[i]);
+      model = glm::translate(model, branchPositions[i]);
+      lightingShader.setMat4("model", model);
+
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, leaf);
+    // bind and render bonsai tree leaves
+    for (unsigned int i = 0; i < leafPositions.size(); i++) {
+      // calc model matrix for each object and pass it to shader before drawing
+      glm::mat4 model = glm::mat4(1.0f);
+      model = glm::translate(model, leafPositions[i]);
+      lightingShader.setMat4("model", model);
+
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, pot);
+    // bind and render bonsai tree pot
+    for (unsigned int i = 0; i < potPositions.size(); i++) {
+      // calc model matrix for each object and pass it to shader before drawing
+      glm::mat4 model = glm::mat4(1.0f);
+      model = glm::translate(model, potPositions[i]);
       lightingShader.setMat4("model", model);
 
       glDrawArrays(GL_TRIANGLES, 0, 36);
