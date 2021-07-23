@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <stdlib.h>
+#include <time.h>
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -22,13 +24,17 @@ void processInput(GLFWwindow *window);
 
 /* Bonsai */
 void bonsai(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth);
+void bonsai1(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth,
+             int xdir, int zdir);
+int check_collision(vector<glm::vec3> cubePositions, glm::vec3 pos);
+int check_touching(vector<glm::vec3> cube_positions, glm::vec3 pos);
 
 /* Screen Settings */
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 /* Camera Settings */
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -112,9 +118,10 @@ int main() {
 
    */
 
+  srand(time(NULL));
   glm::vec3 origin = glm::vec3(0, 0, 0);
   vector<glm::vec3> cubePositions; // World space position of each cube
-  bonsai(origin, cubePositions, 10);
+  bonsai1(origin, cubePositions, 50, 1, 1);
   for (unsigned int i = 0; i < cubePositions.size(); i++) {
     std::cout << cubePositions[i].x << cubePositions[i].y << cubePositions[i].z
               << endl;
@@ -152,7 +159,7 @@ int main() {
   stbi_set_flip_vertically_on_load(
       true); // tell stb_image.h to flip loaded texture's on the y-axis.
   unsigned char *data =
-      stbi_load("/home/hao/Documents/github/fun/bonsai/img/black.jpg", &width,
+      stbi_load("/home/hao/Documents/github/fun/bonsai/img/block.png", &width,
                 &height, &nrChannels, 0);
   if (data) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
@@ -263,10 +270,91 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 
 /* Bonsai function */
 void bonsai(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth) {
+  /* Base case */
   if (growth == 0)
     return;
-  pos = glm::vec3(pos.x, pos.y + 1.0f, pos.z + 1.0f);
-  cubePositions.push_back(pos);
-  bonsai(pos, cubePositions, growth - 1);
-  std::cout << "kappa" << std::endl;
+
+  /* Growth in a singular direction */
+  glm::vec3 npos = pos;
+
+  do {
+    int dir = rand() % 3, xzdist = rand() % 3 - 1, ydist = rand() % 2;
+    switch (dir) {
+    case 0: // x-axis
+      npos = pos + glm::vec3(xzdist, 0, 0);
+      break;
+    case 1: // y-axis
+      npos = pos + glm::vec3(0, ydist, 0);
+      break;
+    case 2: // z-axis
+      npos = pos + glm::vec3(0, 0, xzdist);
+      break;
+    }
+  } while (check_collision(cubePositions, npos));
+
+  // npos = glm::vec3(sin(pos.y + 1), pos.y + 1, 0.0f);
+
+  cubePositions.push_back(npos);
+
+  /* Branch */
+  if (rand() % 10 == 3)
+    bonsai(npos, cubePositions, (int)(growth / 3));
+
+  /* Recursive Case */
+  bonsai(npos, cubePositions, growth - 1);
+}
+
+/* Bonsai function */
+void bonsai1(glm::vec3 pos, vector<glm::vec3> &cubePositions, int growth,
+             int xdir, int zdir) {
+  /* Base case */
+  if (growth == 0)
+    return;
+
+  /* Growth in a singular direction */
+  glm::vec3 npos = pos;
+
+  int i = 3;
+  while (i > 0) {
+    if (rand() % 2 == 0) {
+      npos += glm::vec3(xdir * (rand() % 2), 0, 0);
+    } else {
+      npos += glm::vec3(0, 0, zdir * (rand() % 2));
+    }
+    if (check_touching(cubePositions, npos) > 2)
+      return;
+    cubePositions.push_back(npos);
+    i--;
+  }
+
+  /* Attach cubes */
+  npos += glm::vec3(0, 1, 0);
+  cubePositions.push_back(npos);
+
+  /* Branch */
+  if (growth % 3 == 0 && rand() % 5 == 0) {
+    int nxdir = xdir * -1 * (rand() % 2), nzdir = zdir * -1 * (rand() % 2);
+    if (nxdir || nzdir)
+      bonsai1(npos, cubePositions, (int)(growth), nxdir, nzdir);
+  }
+  /* Recursive Case */
+  bonsai1(npos, cubePositions, growth - 1, xdir, zdir);
+}
+
+/* Function: checks if cube already exists */
+int check_collision(vector<glm::vec3> cubePositions, glm::vec3 pos) {
+  for (unsigned int i = 0; i < cubePositions.size(); i++) {
+    if (cubePositions[i] == pos)
+      return 1; // collision
+  }
+  return 0; // no collision
+}
+
+/* Function: checks if cube touchs any adjacent blocks */
+int check_touching(vector<glm::vec3> cube_positions, glm::vec3 pos) {
+  return (check_collision(cube_positions, pos + glm::vec3(1, 0, 0)) +
+          check_collision(cube_positions, pos + glm::vec3(-1, 0, 0)) +
+          check_collision(cube_positions, pos + glm::vec3(0, 1, 0)) +
+          check_collision(cube_positions, pos + glm::vec3(0, 0, 1)) +
+          check_collision(cube_positions, pos + glm::vec3(0, 0, -1)));
 }
