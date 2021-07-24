@@ -32,7 +32,8 @@ const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 750;
 
 // bonsai max growth
-unsigned int BONSAI_GROWTH = 30;
+unsigned int BONSAI_GROWTH = 16;
+unsigned int BONSAI_BRANCHES_TIERS = 5;
 
 // camera settings
 Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
@@ -127,19 +128,9 @@ int main() {
   srand(time(NULL));
   vector<glm::vec3> branchPositions, leafPositions, potPositions;
   generateBonsai(glm::vec3(0, 0, 0), branchPositions, leafPositions,
-                 BONSAI_GROWTH, 1, 1);
+                 BONSAI_GROWTH, BONSAI_BRANCHES_TIERS, 1, 1);
 
-  glm::vec3 origin = glm::vec3(0, 0, 0);
-  for (int x = -1; x <= 1; x++) {
-    for (int y = 2; y > -2; y--) {
-      for (int z = -1; z <= 1; z++) {
-        potPositions.push_back(origin + glm::vec3(x, y, z));
-      }
-    }
-  }
-  for (unsigned int i = 0; i < potPositions.size(); i++) {
-    cout << potPositions[i].x << potPositions[i].y << potPositions[i].z << endl;
-  }
+  generatePot(glm::vec3(0, 0, 0), potPositions);
 
   // configure cube VBO and VBA
   unsigned int VBO, cubeVAO;
@@ -172,11 +163,11 @@ int main() {
 
   // load in textures (diffuse map + specular map for lighting)
   unsigned int diffuseMap =
-      loadTexture("/home/hao/Documents/github/fun/bonsai/img/block.png");
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/brown.jpg");
   unsigned int specularMap =
-      loadTexture("/home/hao/Documents/github/fun/bonsai/img/block.png");
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/brown.png");
   unsigned int leaf =
-      loadTexture("/home/hao/Documents/github/fun/bonsai/img/leaf.png");
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/leaf4.png");
   unsigned int pot =
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/black.jpg");
 
@@ -248,7 +239,8 @@ int main() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, leaf);
     // bind and render bonsai tree leaves
-    for (unsigned int i = 0; i < leafPositions.size(); i++) {
+    for (unsigned int i = 0;
+         tick > branchPositions.size() && i < leafPositions.size(); i++) {
       // calc model matrix for each object and pass it to shader before drawing
       glm::mat4 model = glm::mat4(1.0f);
       model = glm::translate(model, leafPositions[i]);
