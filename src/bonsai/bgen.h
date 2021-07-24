@@ -8,10 +8,10 @@
 #include <vector>
 
 // constants -------------------------------------------------------------------
-const unsigned int MAX_XZ_GROWTH = 4;
+const unsigned int MAX_XZ_GROWTH = 3;
 const unsigned int BRANCH_COOLDOWN = 2;
 
-const int POT_HEIGHT = 3;
+const int MAX_POT_DEPTH = 4;
 const int POT_RADIUS = 3;
 
 int LEAF_HEIGHT = 3;
@@ -22,6 +22,11 @@ unsigned int BONSAI_GROWTH = 8;
 unsigned int BONSAI_BRANCHES_TIERS = 4;
 
 // function declarations -------------------------------------------------------
+void createBonsai(std::vector<glm::vec3> &branchPositions,
+                  std::vector<glm::vec3> &leafPositions,
+                  std::vector<glm::vec3> &potPositions,
+                  std::vector<glm::vec3> &soilPositions);
+
 void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
                     std::vector<glm::vec3> &leafPositions, int growth,
                     int branchTier, int xdir, int zdir);
@@ -29,8 +34,11 @@ void generateBranch(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
                     std::vector<glm::vec3> &leafPositions, int growth,
                     int branchTier, int xdir, int zdir);
 void generateLeaves(glm::vec3 pos, std::vector<glm::vec3> &leafPositions,
-                    int leafHeight, int leafRadius);
-void generatePot(glm::vec3 origin, std::vector<glm::vec3> &potPositions);
+                    int height, int radius);
+void generatePot(glm::vec3 origin, std::vector<glm::vec3> &potPositions,
+                 int depth);
+void generateSoil(glm::vec3 pos, std::vector<glm::vec3> &soilPositions,
+                  int radius);
 
 int checkCollision(std::vector<glm::vec3> branchPositions, glm::vec3 pos);
 int checkTouching(std::vector<glm::vec3> cube_positions, glm::vec3 pos);
@@ -39,7 +47,8 @@ int checkTouching(std::vector<glm::vec3> cube_positions, glm::vec3 pos);
 // bonsai helper function
 void createBonsai(std::vector<glm::vec3> &branchPositions,
                   std::vector<glm::vec3> &leafPositions,
-                  std::vector<glm::vec3> &potPositions) {
+                  std::vector<glm::vec3> &potPositions,
+                  std::vector<glm::vec3> &soilPositions) {
 
   // call bonsai generation with random start direction
   int xdir = rand() % 3 - 1, zdir = rand() % 3 - 1;
@@ -47,7 +56,10 @@ void createBonsai(std::vector<glm::vec3> &branchPositions,
                  BONSAI_GROWTH, BONSAI_BRANCHES_TIERS, xdir, zdir);
 
   // call pot generation
-  generatePot(glm::vec3(0, 0, 0), potPositions);
+  generatePot(glm::vec3(0, -1, 0), potPositions, 0);
+
+  // generate soil
+  generateSoil(glm::vec3(0, -1, 0), soilPositions, POT_RADIUS);
 }
 
 // recursively generates a voxel-based bonsai tree */
@@ -91,7 +103,7 @@ void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
   }
 }
 
-// generate branch
+// generate branchs new dir for a branch
 void generateBranch(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
                     std::vector<glm::vec3> &leafPositions, int growth,
                     int branchTier, int xdir, int zdir) {
@@ -113,32 +125,49 @@ void generateBranch(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
                    pow(2, (branchTier - 1)), branchTier - 1, nxdir, nzdir);
 }
 
-// generate bonsai leaves
+// recursively generates bonsai leaves
 void generateLeaves(glm::vec3 pos, std::vector<glm::vec3> &leafPositions,
-                    int leafHeight, int leafRadius) {
-  if (!leafHeight)
+                    int height, int radius) {
+  if (!height)
     return;
   else {
-    for (int x = -leafRadius; x <= leafRadius; x++) {
-      for (int z = -leafRadius; z <= leafRadius; z++) {
-        if (x * x + z * z <= leafRadius * leafRadius)
+    for (int x = -radius; x <= radius; x++) {
+      for (int z = -radius; z <= radius; z++) {
+        if (x * x + z * z <= radius * radius)
           if ((x != 0 || z != 0) && rand() % (abs(x) + abs(z)) == 0)
             leafPositions.push_back(pos + glm::vec3(x, 1, z));
       }
     }
   }
-  generateLeaves(pos + glm::vec3(0, 1, 0), leafPositions, leafHeight - 1,
-                 leafRadius - 2);
+  generateLeaves(pos + glm::vec3(0, 1, 0), leafPositions, height - 1,
+                 radius - 2);
 }
 
-// general a cylindrical pot
-void generatePot(glm::vec3 origin, std::vector<glm::vec3> &potPositions) {
-  for (int x = -POT_RADIUS; x <= POT_RADIUS; x++) {
-    for (int y = origin.y; y > -POT_HEIGHT; y--) {
-      for (int z = -POT_RADIUS; z <= POT_RADIUS; z++) {
-        if (x * x + z * z <= POT_RADIUS * POT_RADIUS)
-          potPositions.push_back(origin + glm::vec3(x, y, z));
+// recursively generates a spherical pot
+void generatePot(glm::vec3 pos, std::vector<glm::vec3> &potPositions,
+                 int depth) {
+  int y = pos.y, radius = -0.5 * ((y - 1) * (y + 6));
+  std::cout << pos.y << " " << radius << std::endl;
+  if (depth == MAX_POT_DEPTH)
+    return;
+  else {
+    for (int x = -radius; x <= radius; x++) {
+      for (int z = -radius; z <= radius; z++) {
+        if (x * x + z * z <= radius * radius)
+          potPositions.push_back(pos + glm::vec3(x, 0, z));
       }
+    }
+    generatePot(pos + glm::vec3(0, -1, 0), potPositions, depth + 1);
+  }
+}
+
+// generate soil
+void generateSoil(glm::vec3 pos, std::vector<glm::vec3> &soilPositions,
+                  int radius) {
+  for (int x = -radius; x <= radius; x++) {
+    for (int z = -radius; z <= radius; z++) {
+      if (x * x + z * z <= radius * radius)
+        soilPositions.push_back(pos + glm::vec3(x, 0, z));
     }
   }
 }

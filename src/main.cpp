@@ -31,8 +31,8 @@ void renderCubeArray(vector<glm::vec3> cubeArray, Shader shader,
 // constants
 // -------------------------------------------------------------------
 // screen settings
-const unsigned int SCR_WIDTH = 1000;
-const unsigned int SCR_HEIGHT = 750;
+const unsigned int SCR_WIDTH = 1600;
+const unsigned int SCR_HEIGHT = 1080;
 
 // camera settings
 Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
@@ -125,8 +125,8 @@ int main() {
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f  //
   };
   srand(time(NULL));
-  vector<glm::vec3> branchPositions, leafPositions, potPositions;
-  createBonsai(branchPositions, leafPositions, potPositions);
+  vector<glm::vec3> branchPositions, leafPositions, potPositions, soilPositions;
+  createBonsai(branchPositions, leafPositions, potPositions, soilPositions);
 
   // configure cube VBO and VBA
   unsigned int VBO, cubeVAO;
@@ -166,6 +166,8 @@ int main() {
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/leaf4.png");
   unsigned int pot =
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/black.jpg");
+  unsigned int soil =
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/moss.jpg");
 
   // assign texture units to samplers
   lightingShader.use();
@@ -173,6 +175,7 @@ int main() {
   lightingShader.setInt("material.specular", 1);
   lightingShader.setInt("texture", 2);
   lightingShader.setInt("texture", 3);
+  lightingShader.setInt("texture", 4);
 
   // render loop ---------------------------------------------------------------
   unsigned int tick = 0;
@@ -187,7 +190,7 @@ int main() {
     processInput(window);
 
     // render background
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // cyan
+    glClearColor(0, 0, 0, 0); // cyan
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // activate shader for setting uniforms/drawing objects
@@ -226,6 +229,10 @@ int main() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, leaf);
     renderCubeArray(leafPositions, lightingShader, tick);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, soil);
+    renderCubeArray(soilPositions, lightingShader, tick);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, pot);
