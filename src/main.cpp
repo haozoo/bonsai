@@ -25,15 +25,14 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height);
 void mouseCallback(GLFWwindow *window, double xpos, double ypos);
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+void renderCubeArray(vector<glm::vec3> cubeArray, Shader shader,
+                     unsigned int tick);
 
-// constants -------------------------------------------------------------------
+// constants
+// -------------------------------------------------------------------
 // screen settings
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 750;
-
-// bonsai max growth
-unsigned int BONSAI_GROWTH = 16;
-unsigned int BONSAI_BRANCHES_TIERS = 5;
 
 // camera settings
 Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
@@ -127,10 +126,7 @@ int main() {
   };
   srand(time(NULL));
   vector<glm::vec3> branchPositions, leafPositions, potPositions;
-  generateBonsai(glm::vec3(0, 0, 0), branchPositions, leafPositions,
-                 BONSAI_GROWTH, BONSAI_BRANCHES_TIERS, 1, 1);
-
-  generatePot(glm::vec3(0, 0, 0), potPositions);
+  createBonsai(branchPositions, leafPositions, potPositions);
 
   // configure cube VBO and VBA
   unsigned int VBO, cubeVAO;
@@ -165,7 +161,7 @@ int main() {
   unsigned int diffuseMap =
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/brown.jpg");
   unsigned int specularMap =
-      loadTexture("/home/hao/Documents/github/fun/bonsai/img/brown.png");
+      loadTexture("/home/hao/Documents/github/fun/bonsai/img/brown.jpg");
   unsigned int leaf =
       loadTexture("/home/hao/Documents/github/fun/bonsai/img/leaf4.png");
   unsigned int pot =
@@ -219,47 +215,21 @@ int main() {
     glm::mat4 model = glm::mat4(1.0f);
     lightingShader.setMat4("model", model);
 
-    // bind diffuse map & specular map
+    // bind and render objects -------------------------------------------------
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, diffuseMap);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, specularMap);
-
-    // bind and render bonsai tree branch cubes
     glBindVertexArray(cubeVAO);
-    for (unsigned int i = 0; i < tick && i < branchPositions.size(); i++) {
-      // calc model matrix for each object and pass it to shader before drawing
-      glm::mat4 model = glm::mat4(1.0f);
-      model = glm::translate(model, branchPositions[i]);
-      lightingShader.setMat4("model", model);
-
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
+    renderCubeArray(branchPositions, lightingShader, tick);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, leaf);
-    // bind and render bonsai tree leaves
-    for (unsigned int i = 0;
-         tick > branchPositions.size() && i < leafPositions.size(); i++) {
-      // calc model matrix for each object and pass it to shader before drawing
-      glm::mat4 model = glm::mat4(1.0f);
-      model = glm::translate(model, leafPositions[i]);
-      lightingShader.setMat4("model", model);
-
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
+    renderCubeArray(leafPositions, lightingShader, tick);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, pot);
-    // bind and render bonsai tree pot
-    for (unsigned int i = 0; i < potPositions.size(); i++) {
-      // calc model matrix for each object and pass it to shader before drawing
-      glm::mat4 model = glm::mat4(1.0f);
-      model = glm::translate(model, potPositions[i]);
-      lightingShader.setMat4("model", model);
-
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
+    renderCubeArray(potPositions, lightingShader, tick);
 
     // draw light object
     lightCubeShader.use();
@@ -267,7 +237,7 @@ int main() {
     lightCubeShader.setMat4("view", view);
     model = glm::mat4(1.0f);
     model = glm::translate(model, lightPos);
-    model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+    // model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
     lightCubeShader.setMat4("model", model);
 
     glBindVertexArray(lightCubeVAO);
@@ -279,7 +249,7 @@ int main() {
     tick++;
   }
 
-  // clean-up unecessary things
+  // clean-up ------------------------------------------------------------------
   glDeleteVertexArrays(1, &cubeVAO);
   glDeleteVertexArrays(1, &lightCubeVAO);
   glDeleteBuffers(1, &VBO);
@@ -335,4 +305,18 @@ void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
 // callback: handles mouse scroll wheel
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
+}
+
+// renders a vector of cube possitions
+void renderCubeArray(vector<glm::vec3> cubeArray, Shader shader,
+                     unsigned int tick) {
+  for (unsigned int i = 0; i < tick && i < cubeArray.size(); i++) {
+
+    // calc model matrix for each object and pass it to shader before drawing
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, cubeArray[i]);
+    shader.setMat4("model", model);
+
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
 }

@@ -17,6 +17,10 @@ const int POT_RADIUS = 3;
 int LEAF_HEIGHT = 3;
 int LEAF_RADIUS = 6;
 
+// bonsai max growth
+unsigned int BONSAI_GROWTH = 8;
+unsigned int BONSAI_BRANCHES_TIERS = 4;
+
 // function declarations -------------------------------------------------------
 void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
                     std::vector<glm::vec3> &leafPositions, int growth,
@@ -32,15 +36,29 @@ int checkCollision(std::vector<glm::vec3> branchPositions, glm::vec3 pos);
 int checkTouching(std::vector<glm::vec3> cube_positions, glm::vec3 pos);
 
 // functions -------------------------------------------------------------------
+// bonsai helper function
+void createBonsai(std::vector<glm::vec3> &branchPositions,
+                  std::vector<glm::vec3> &leafPositions,
+                  std::vector<glm::vec3> &potPositions) {
+
+  // call bonsai generation with random start direction
+  int xdir = rand() % 3 - 1, zdir = rand() % 3 - 1;
+  generateBonsai(glm::vec3(0, 0, 0), branchPositions, leafPositions,
+                 BONSAI_GROWTH, BONSAI_BRANCHES_TIERS, xdir, zdir);
+
+  // call pot generation
+  generatePot(glm::vec3(0, 0, 0), potPositions);
+}
+
 // recursively generates a voxel-based bonsai tree */
 void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
                     std::vector<glm::vec3> &leafPositions, int growth,
                     int branchTier, int xdir, int zdir) {
-  std::cout << growth << " " << branchTier << std::endl;
+
   if (branchTier == 0) { // base case
     generateLeaves(pos, leafPositions, LEAF_HEIGHT, LEAF_RADIUS);
     return;
-  } else if (growth == 0) {
+  } else if (growth == 0) { // split into smaller branches
     generateBonsai(pos, branchPositions, leafPositions,
                    pow(2, (branchTier - 1)), branchTier - 1, xdir, zdir);
   } else {
@@ -53,9 +71,9 @@ void generateBonsai(glm::vec3 pos, std::vector<glm::vec3> &branchPositions,
       else
         npos += glm::vec3(0, 0, zdir * (rand() % 2));
 
-      // // prevents self-collisions
-      // if (checkTouching(branchPositions, npos) > 2)
-      //   return;
+      // prevents self-collisions
+      if (checkTouching(branchPositions, npos) > 2)
+        return;
       branchPositions.push_back(npos);
     }
     npos += glm::vec3(0, 1, 0);
@@ -104,7 +122,8 @@ void generateLeaves(glm::vec3 pos, std::vector<glm::vec3> &leafPositions,
     for (int x = -leafRadius; x <= leafRadius; x++) {
       for (int z = -leafRadius; z <= leafRadius; z++) {
         if (x * x + z * z <= leafRadius * leafRadius)
-          leafPositions.push_back(pos + glm::vec3(x, 1, z));
+          if ((x != 0 || z != 0) && rand() % (abs(x) + abs(z)) == 0)
+            leafPositions.push_back(pos + glm::vec3(x, 1, z));
       }
     }
   }
