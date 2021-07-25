@@ -1,4 +1,4 @@
-/* Abstract Camera Class:
+/* Camera Class:
  * Processes input and calculates corresponding Euler angles, vectors and
  * matrices for OpenGL.
  * -- Hao X. July 2021

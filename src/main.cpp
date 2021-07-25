@@ -125,8 +125,7 @@ int main() {
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f  //
   };
   srand(time(NULL));
-  vector<glm::vec3> branchPositions, leafPositions, potPositions, soilPositions;
-  createBonsai(branchPositions, leafPositions, potPositions, soilPositions);
+  BonsaiTree tree;
 
   // configure cube VBO and VBA
   unsigned int VBO, cubeVAO;
@@ -224,19 +223,19 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, specularMap);
     glBindVertexArray(cubeVAO);
-    renderCubeArray(branchPositions, lightingShader, tick);
+    renderCubeArray(tree.BranchPositions, lightingShader, tick);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, leaf);
-    renderCubeArray(leafPositions, lightingShader, tick);
+    renderCubeArray(tree.LeafPositions, lightingShader, tick);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, soil);
-    renderCubeArray(soilPositions, lightingShader, tick);
+    renderCubeArray(tree.SoilPositions, lightingShader, tick);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, pot);
-    renderCubeArray(potPositions, lightingShader, tick);
+    renderCubeArray(tree.PotPositions, lightingShader, tick);
 
     // draw light object
     lightCubeShader.use();

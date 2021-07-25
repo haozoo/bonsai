@@ -1,3 +1,8 @@
+/* Shader Class:
+ * Handles shader program compilation
+ * -- Hao X. July 2021
+ */
+
 #ifndef SHADER_H
 #define SHADER_H
 
