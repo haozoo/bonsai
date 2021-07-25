@@ -282,7 +282,7 @@ void processInput(GLFWwindow *window) {
 
   // general controls
   if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-    camera.setMode();
+    camera.switchMode();
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {

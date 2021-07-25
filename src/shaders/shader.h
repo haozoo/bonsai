@@ -6,25 +6,24 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <glad/glad.h>
-
-#include <glm/glm.hpp>
-
 #include <fstream>
+#include <glad/glad.h>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>
 
+// class -----------------------------------------------------------------------
 class Shader {
 public:
-  /* Property: Shader ID */
+  // attributes ----------------------------------------------------------------
   unsigned int ID;
 
-  /* Constructor: generates shader */
+  // constructors --------------------------------------------------------------
   Shader(const char *vertexPath, const char *fragmentPath,
          const char *geometryPath = nullptr) {
 
-    /* 1. Retrieve the vertex/fragment source code from filePath */
+    // retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
     std::string fragmentCode;
     std::string geometryCode;
@@ -69,7 +68,7 @@ public:
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
 
-    /* 2. Compile shaders */
+    // compile all shaders
     unsigned int vertex, fragment;
 
     vertex = glCreateShader(GL_VERTEX_SHADER); // vertex shader
@@ -92,7 +91,7 @@ public:
       checkCompileErrors(geometry, "GEOMETRY");
     }
 
-    /* Bind to shader program */
+    // bind all shaders into shader program
     ID = glCreateProgram();
     glAttachShader(ID, vertex);
     glAttachShader(ID, fragment);
@@ -101,17 +100,17 @@ public:
     glLinkProgram(ID);
     checkCompileErrors(ID, "PROGRAM");
 
-    /* Clean-up linked shaders */
+    // clean up already linked shaders
     glDeleteShader(vertex);
     glDeleteShader(fragment);
     if (geometryPath != nullptr)
       glDeleteShader(geometry);
   }
 
-  /* Function: activates shader */
+  // actives shader
   void use() { glUseProgram(ID); }
 
-  /* Utility Uniform Functions ---------------------------------------------- */
+  // utility uniform functions -------------------------------------------------
   void setBool(const std::string &name, bool value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
   }
@@ -153,7 +152,7 @@ public:
   }
 
 private:
-  /* Function: Check for compilation errors */
+  // check for compilation errors
   void checkCompileErrors(GLuint shader, std::string type) {
     GLint success;
     GLchar infoLog[1024];

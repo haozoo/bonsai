@@ -24,6 +24,7 @@ const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 const float RADIUS = 70.0f;
 
+// class -----------------------------------------------------------------------
 class Camera {
 public:
   // attributes ----------------------------------------------------------------
@@ -34,7 +35,7 @@ public:
   glm::vec3 Right;
   glm::vec3 WorldUp;
 
-  // euler angles
+  // euler angles to determine camera rotation
   float Yaw;
   float Pitch;
 
@@ -73,7 +74,7 @@ public:
   }
 
   // functions -----------------------------------------------------------------
-  // returns the view matrix calculated using Euler angles and the LookAt matrix
+  // returns the view matrix according to camera mode setting
   glm::mat4 GetViewMatrix() {
     glm::mat4 view;
 
@@ -93,13 +94,14 @@ public:
     return view;
   }
 
-  // sets the position
-  void setMode() {
+  // switches modes from USER to ROTATING and vice-versa
+  void switchMode() {
     switch (Mode) {
     case ROTATING:
       Mode = USER;
       break;
     case USER:
+      // reset the yaw and pitch to reorient camera
       Yaw = YAW;
       Pitch = PITCH;
       updateCameraVectors();
