@@ -27,9 +27,12 @@ void mouseCallback(GLFWwindow *window, double xpos, double ypos);
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void renderCubeArray(vector<glm::vec3> cubeArray, Shader shader,
-                     unsigned int tick);
+                     unsigned int tick, unsigned int texture);
+void configureVertexObjects(unsigned int &VBO, unsigned int &cubeVAO,
+                            unsigned int &lightCubeVAO);
 
-// constants -------------------------------------------------------------------
+// constants
+// -------------------------------------------------------------------
 // screen settings
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 1080;
@@ -60,6 +63,7 @@ Bonsai tree;
  \⠌______\/
 
 */
+const int VERTEX_LENGTH = 8;
 float vertices[] = {
     // positions         // normals     // texture coords //
     -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f, //
@@ -127,31 +131,8 @@ int main() {
   Shader lightCubeShader("src/shaders/sourcevs", "src/shaders/sourcefs");
 
   // configure cube VBO and VBA
-  unsigned int VBO, cubeVAO;
-  glGenVertexArrays(1, &cubeVAO);
-  glGenBuffers(1, &VBO);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  glBindVertexArray(cubeVAO);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        (void *)(3 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        (void *)(6 * sizeof(float)));
-  glEnableVertexAttribArray(2);
-
-  // configure light cube's VAO (VBO same)
-  unsigned int lightCubeVAO;
-  glGenVertexArrays(1, &lightCubeVAO);
-  glBindVertexArray(lightCubeVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
+  unsigned int VBO, cubeVAO, lightCubeVAO;
+  configureVertexObjects(VBO, cubeVAO, lightCubeVAO);
 
   // load in textures (diffuse map + specular map for lighting)
   unsigned int bark = loadTexture("img/log.jpg");
@@ -178,19 +159,21 @@ int main() {
     processInput(window);
 
     // render background
-    glClearColor(0, 0, 0, 0); // cyan
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // activate shader for setting uniforms/drawing objects
     lightingShader.use();
     lightingShader.configure(camera.Position, lightPos);
 
-    // get view matrix / projection
+    // set projection
     float fovy = glm::radians(camera.Zoom);
     float aspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
-    glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 projection = glm::perspective(fovy, aspect, 0.1f, 100.0f);
     lightingShader.setMat4("projection", projection);
+
+    // set view matrix
+    glm::mat4 view = camera.GetViewMatrix();
     lightingShader.setMat4("view", view);
 
     // world transformation
@@ -198,34 +181,21 @@ int main() {
     lightingShader.setMat4("model", model);
 
     // bind and render objects -------------------------------------------------
+    // bonsai objects
     glBindVertexArray(cubeVAO);
+    renderCubeArray(tree.BranchPositions, lightingShader, tick, bark);
+    renderCubeArray(tree.LeafPositions, lightingShader, tick, leaf);
+    renderCubeArray(tree.SoilPositions, lightingShader, tick, soil);
+    renderCubeArray(tree.PotPositions, lightingShader, tick, pot);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, bark);
-
-    renderCubeArray(tree.BranchPositions, lightingShader, tick);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, leaf);
-    renderCubeArray(tree.LeafPositions, lightingShader, tick);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, soil);
-    renderCubeArray(tree.SoilPositions, lightingShader, tick);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, pot);
-    renderCubeArray(tree.PotPositions, lightingShader, tick);
-
-    // draw light object
+    // light object
     lightCubeShader.use();
     lightCubeShader.setMat4("projection", projection);
     lightCubeShader.setMat4("view", view);
     model = glm::mat4(1.0f);
     model = glm::translate(model, lightPos);
-    // model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+    model = glm::scale(model, glm::vec3(0.5f));
     lightCubeShader.setMat4("model", model);
-
     glBindVertexArray(lightCubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -279,12 +249,12 @@ void setCallbacks(GLFWwindow *window) {
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 };
 
-// callback: ensures viewport resizes accordingly upon window resize
+// callback to ensure viewport resizes accordingly upon window resize
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-// callback: handles mouse movement
+// callback to handle mouse movement
 void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
   if (camera.Mode == USER) { // only enable mouse movement in USER mode
     if (firstMouse) {
@@ -303,7 +273,7 @@ void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
   }
 }
 
-// callback: handles mouse scroll wheel
+// callback to handle mouse scroll wheel
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
 }
@@ -312,7 +282,9 @@ void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
 // renders a vector of cube positions based on current tick
 // - number of cubes rendered equals the current tick, this animates the model
 void renderCubeArray(vector<glm::vec3> cubeArray, Shader shader,
-                     unsigned int tick) {
+                     unsigned int tick, unsigned int texture) {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
   for (unsigned int i = 0; i < tick && i < cubeArray.size(); i++) {
     // calc model matrix for each object and pass it to shader before drawing
     glm::mat4 model = glm::mat4(1.0f);
@@ -320,4 +292,41 @@ void renderCubeArray(vector<glm::vec3> cubeArray, Shader shader,
     shader.setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
+}
+
+// binds and configures vertex buffer and attribute objects for each cube
+// - VBO is shared between cube and light cube
+// - VAO must be configured separately
+void configureVertexObjects(unsigned int &VBO, unsigned int &cubeVAO,
+                            unsigned int &lightCubeVAO) {
+  // configure default cubes VAO & VBO
+  glGenVertexArrays(1, &cubeVAO);
+  glGenBuffers(1, &VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBindVertexArray(cubeVAO);
+
+  // inform openGL how to intepret vertex attribute data, for example:
+  // vertex = {-0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f}
+  //           -------------------  -----------   -----------------
+  //                    |                |                |
+  //             position coords      normals       texture coords
+  int len = VERTEX_LENGTH * sizeof(float);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, len, (void *)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, len,
+                        (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, len,
+                        (void *)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
+
+  // configure light cube's VAO (VBO same)
+  glGenVertexArrays(1, &lightCubeVAO);
+  glBindVertexArray(lightCubeVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+  // adjust stride in attributes for light cube VAO
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
 }
