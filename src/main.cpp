@@ -229,13 +229,16 @@ void processInput(GLFWwindow *window) {
   }
 
   // general controls
-  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) // switchs camera mode
     camera.switchMode();
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) // exits
     glfwSetWindowShouldClose(window, true);
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) { // creates new tree
     Bonsai newTree;
     tree = newTree;
+    tick = 0;
+  }
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { // re-animates tree
     tick = 0;
   }
 }
