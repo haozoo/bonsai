@@ -59,8 +59,8 @@ Bonsai tree;
   /⠡      /\
  /  ⠡..../..\
 /___⠌___/   /   cube vertices
-\  ⠌    \  /
- \⠌______\/
+\  ⠌    \  /    - in OpenGl a cube is best rendered as a set of triangles
+ \⠌______\/     - therefore, 12 triangles with 3 points each = 36 vertices
 
 */
 const int VERTEX_LENGTH = 8;
@@ -159,7 +159,7 @@ int main() {
     processInput(window);
 
     // render background
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
+    glClearColor(0.02f, 0.02f, 0.03f, 0.0f); // black
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // activate shader for setting uniforms/drawing objects
