@@ -12,7 +12,7 @@ https://user-images.githubusercontent.com/80584824/126897086-d440bc3c-6082-4d9f-
 <br>
 
 ## About bonsai++
-`Bonsai` is made up of two parts: a recursive bonsai generation algortihm and an OpenGL graphics engine!  
+`bonsai++` is made up of two parts: a recursive bonsai generation algortihm and an OpenGL graphics engine!  
 
 <br>
 
