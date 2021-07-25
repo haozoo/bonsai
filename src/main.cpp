@@ -50,6 +50,7 @@ unsigned int tick = 0;
 
 // lighting
 glm::vec3 lightPos(0.0f, 30.0f, 0.0f);
+float red = 0.02f, green = 0.02f, blue = 0.03f, alpha = 1.0f;
 
 // bonsai
 Bonsai tree;
@@ -159,7 +160,7 @@ int main() {
     processInput(window);
 
     // render background
-    glClearColor(0.02f, 0.02f, 0.03f, 0.0f); // black
+    glClearColor(red, green, blue, alpha); // black
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // activate shader for setting uniforms/drawing objects
