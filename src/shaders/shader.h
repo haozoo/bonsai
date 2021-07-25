@@ -110,6 +110,19 @@ public:
   // actives shader
   void use() { glUseProgram(ID); }
 
+  // configure shader
+  void configure(glm::vec3 pos, glm::vec3 lightPos) {
+    // positions
+    setVec3("light.position", lightPos);
+    setVec3("viewPos", pos);
+    // light properties
+    setVec3("light.ambient", 0.7f, 0.7f, 0.7f);
+    setVec3("light.diffuse", 1.3f, 1.3f, 1.3f);
+    setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+    // material properties
+    setFloat("material.shininess", 64.0f);
+  }
+
   // utility uniform functions -------------------------------------------------
   void setBool(const std::string &name, bool value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
