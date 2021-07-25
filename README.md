@@ -38,7 +38,7 @@ https://user-images.githubusercontent.com/80584824/126900360-27952a9e-ecfd-4ee0-
 <br>
 
 ## Challenges
-While tweaking the bonsai's growth algorithm was a painful process of trial and error - the majority of challenges faced were in regards to learning how to us OpenGL's state-ful window. 
+While tweaking the bonsai's growth algorithm was a painful process of trial and error - the majority of challenges faced were in regards to learning how to use OpenGL's state-full window. 
 
 In particular, managing the camera was difficult - as processing the pitch / yaw of the camera using Euler Angles was new to me. Same goes for the lookAt, projection and perspective matrices that were needed to convert the 3D space onto a 2D screen.
 
