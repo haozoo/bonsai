@@ -34,8 +34,8 @@ void configureVertexObjects(unsigned int &VBO, unsigned int &cubeVAO,
 // constants
 // -------------------------------------------------------------------
 // screen settings
-const unsigned int SCR_WIDTH = 1600;
-const unsigned int SCR_HEIGHT = 1080;
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 // camera settings
 Camera camera(glm::vec3(0.0f, 20.0f, 60.0f));
