@@ -14,6 +14,7 @@
 
 // constants & enums -----------------------------------------------------------
 enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
+enum Camera_Control { USER, ROTATING };
 
 // default camera values
 const float YAW = -90.0f;
@@ -21,6 +22,7 @@ const float PITCH = 0.0f;
 const float SPEED = 2.5f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
+const float RADIUS = 70.0f;
 
 class Camera {
 public:
@@ -40,6 +42,7 @@ public:
   float MovementSpeed;
   float MouseSensitivity;
   float Zoom;
+  Camera_Control Mode;
 
   // constructors --------------------------------------------------------------
   // 1. construct using vectors
@@ -52,6 +55,7 @@ public:
     WorldUp = up;
     Yaw = yaw;
     Pitch = pitch;
+    Mode = ROTATING;
     updateCameraVectors();
   }
 
@@ -64,13 +68,44 @@ public:
     WorldUp = glm::vec3(upX, upY, upZ);
     Yaw = yaw;
     Pitch = pitch;
+    Mode = ROTATING;
     updateCameraVectors();
   }
 
   // functions -----------------------------------------------------------------
   // returns the view matrix calculated using Euler angles and the LookAt matrix
   glm::mat4 GetViewMatrix() {
-    return glm::lookAt(Position, Position + Front, Up);
+    glm::mat4 view;
+
+    switch (Mode) {
+    case USER: // rotating camera
+      view = glm::lookAt(Position, Position + Front, Up);
+      break;
+
+    case ROTATING: // user-controlled camera
+      float camX = sin(0.25 * glfwGetTime()) * RADIUS;
+      float camZ = cos(0.25 * glfwGetTime()) * RADIUS;
+      float camY = sin(0.25 * glfwGetTime()) * RADIUS / 4.0 + 30.0f;
+      glm::vec3 centre = glm::vec3(0.0f, 20.0f, 0.0f);
+      view = glm::lookAt(glm::vec3(camX, camY, camZ), centre, Up);
+      break;
+    }
+    return view;
+  }
+
+  // sets the position
+  void setMode() {
+    switch (Mode) {
+    case ROTATING:
+      Mode = USER;
+      break;
+    case USER:
+      Yaw = YAW;
+      Pitch = PITCH;
+      updateCameraVectors();
+      Mode = ROTATING;
+      break;
+    }
   }
 
   // processes input received from any keyboard-like input system in enum form

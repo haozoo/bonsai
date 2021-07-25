@@ -206,11 +206,11 @@ int main() {
     // material properties
     lightingShader.setFloat("material.shininess", 64.0f);
 
-    // view/projection transformations
+    // get view matrix / projection
+    glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 projection =
         glm::perspective(glm::radians(camera.Zoom),
                          (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    glm::mat4 view = camera.GetViewMatrix();
     lightingShader.setMat4("projection", projection);
     lightingShader.setMat4("view", view);
 
@@ -267,16 +267,23 @@ int main() {
 // functions -------------------------------------------------------------------
 // handles user input
 void processInput(GLFWwindow *window) {
+  // movement controls
+  if (camera.Mode == USER) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+      camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+      camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+      camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+      camera.ProcessKeyboard(RIGHT, deltaTime);
+  }
+
+  // general controls
+  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+    camera.setMode();
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    camera.ProcessKeyboard(FORWARD, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    camera.ProcessKeyboard(BACKWARD, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    camera.ProcessKeyboard(LEFT, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
 // sets all callbacks
@@ -294,19 +301,21 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
 
 // callback: handles mouse movement
 void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
-  if (firstMouse) {
+  if (camera.Mode == USER) {
+    if (firstMouse) {
+      lastX = xpos;
+      lastY = ypos;
+      firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coords go bottom -> top
+
     lastX = xpos;
     lastY = ypos;
-    firstMouse = false;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
   }
-
-  float xoffset = xpos - lastX;
-  float yoffset = lastY - ypos; // reversed since y-coords go bottom -> top
-
-  lastX = xpos;
-  lastY = ypos;
-
-  camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 // callback: handles mouse scroll wheel
