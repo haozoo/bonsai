@@ -11,7 +11,7 @@
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "bonsai/bgen.h"
+#include "bonsai/bonsai.h"
 #include "camera/camera.h"
 #include "shaders/shader.h"
 #include "stb_image.h"
@@ -43,9 +43,13 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+unsigned int tick = 0;
 
 // lighting
 glm::vec3 lightPos(0.0f, 30.0f, 0.0f);
+
+// bonsai
+Bonsai tree;
 
 // main ------------------------------------------------------------------------
 int main() {
@@ -125,7 +129,6 @@ int main() {
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f  //
   };
   srand(time(NULL));
-  BonsaiTree tree;
 
   // configure cube VBO and VBA
   unsigned int VBO, cubeVAO;
@@ -177,7 +180,6 @@ int main() {
   lightingShader.setInt("texture", 4);
 
   // render loop ---------------------------------------------------------------
-  unsigned int tick = 0;
   while (!glfwWindowShouldClose(window)) {
 
     // frame logic
@@ -283,6 +285,11 @@ void processInput(GLFWwindow *window) {
     camera.setMode();
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+    Bonsai newTree;
+    tree = newTree;
+    tick = 0;
+  }
 }
 
 // sets all callbacks

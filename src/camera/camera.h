@@ -1,6 +1,6 @@
 /* Camera Class:
  * Processes input and calculates corresponding Euler angles, vectors and
- * matrices for OpenGL.
+ * matrices for OpenGL for camera view
  * -- Hao X. July 2021
  */
 
@@ -19,7 +19,7 @@ enum Camera_Control { USER, ROTATING };
 // default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 2.5f;
+const float SPEED = 4.0f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 const float RADIUS = 70.0f;
